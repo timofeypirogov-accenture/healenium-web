@@ -12,7 +12,7 @@
  */
 var items = [];
 var a = arguments[0];
-while (a != document) {
+while ((a != document)&&(a.nodeName != "#document-fragment")) {
   var child = a;
   var i=0; while(child=child.previousElementSibling) i++;
   var node = {tag:null,id:null,index:null,classes:[],other:{},innerText:""};

@@ -51,6 +51,7 @@ public class SelfHealingEngine {
 
     @Getter private final Config config;
     @Getter private final WebDriver webDriver;
+    private WebElement currentShadowRoot;
     private final int recoveryTries;
     private final double scoreCap;
     private final List<Set<SelectorComponent>> selectorDetailLevels;
@@ -171,14 +172,20 @@ public class SelfHealingEngine {
     }
 
     private Scored<By> toLocator(Scored<Node> node) {
+        List<WebElement> elements;
         for (Set<SelectorComponent> detailLevel : selectorDetailLevels) {
             By locator = construct(node.getValue(), detailLevel);
-            List<WebElement> elements = webDriver.findElements(locator);
+            if (this.getCurrentShadowRoot()!=null){
+                elements = this.getCurrentShadowRoot().findElements(locator);
+            } else {
+                 elements = webDriver.findElements(locator);
+            }
+
             if (elements.size() == 1) {
                 return new Scored<>(node.getScore(), locator);
             }
         }
-        throw new HealException();
+        throw new HealException("Fail to convert find element To Locator");
     }
 
     private By construct(Node node, Set<SelectorComponent> detailLevel) {
@@ -208,4 +215,11 @@ public class SelfHealingEngine {
         return config.getBoolean("heal-enabled") && !isDisabled;
     }
 
+    public WebElement getCurrentShadowRoot() {
+        return currentShadowRoot;
+    }
+
+    public void setCurrentShadowRoot(WebElement currentShadowRoot) {
+        this.currentShadowRoot = currentShadowRoot;
+    }
 }

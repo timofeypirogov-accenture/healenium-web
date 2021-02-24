@@ -21,12 +21,29 @@ import org.openqa.selenium.WebElement;
 
 import java.util.List;
 
-@AllArgsConstructor
+
+
 @EqualsAndHashCode(callSuper = true)
 public class PageAwareBy extends By {
 
     @Getter private final String pageName;
     @Getter private final By by;
+    private WebElement documentShadowRoot;
+
+    public PageAwareBy(String pageName, By by) {
+        this.pageName = pageName;
+        this.by = by;
+    }
+
+    public void setDocumentShadowRoot(WebElement documentShadowRoot) {
+        this.documentShadowRoot = documentShadowRoot;
+    }
+
+    public WebElement getDocumentShadowRoot() {
+        return documentShadowRoot;
+    }
+
+
 
     /**
      * Instantiates a page-aware locator.

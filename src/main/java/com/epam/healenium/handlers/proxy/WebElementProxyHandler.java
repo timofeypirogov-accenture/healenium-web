@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebElement;
 
@@ -71,7 +72,13 @@ public class WebElementProxyHandler extends BaseHandler {
             return element;
         } catch (NoSuchElementException ex) {
             log.warn("Failed to find an element using locator {}\nReason: {}\nTrying to heal...", key.getBy().toString(), ex.getMessage());
-            return getHealingService().heal(key, ex).orElseThrow(() -> ex);
+            String hisParentNodeName = ((JavascriptExecutor)this.driver).executeScript("return (arguments[0].nodeName );", this.delegate).toString();
+            if (hisParentNodeName.equals("#document-fragment")){
+                log.warn("working with shadowroot");
+                key.setDocumentShadowRoot(this.delegate);
+                engine.setCurrentShadowRoot(this.delegate);
+            }
+            return this.getHealingService().heal(key, ex).orElseThrow(() -> ex);
         }
     }
 }

@@ -39,13 +39,11 @@ public class HealingServiceImpl implements HealingService {
     public Optional<WebElement> heal(PageAwareBy pageBy, NoSuchElementException ex) {
         // check if already have healed results
 //        RequestDto request = mapper.buildDto(pageBy.getBy(), e.getStackTrace(), pageSource());
-        return healLocator(pageBy, ex.getStackTrace()).map(driver::findElement);
-    }
-
-    public Optional<List<WebElement>> healElements(PageAwareBy pageBy, NoSuchElementException ex) {
-        // check if already have healed results
-//        RequestDto request = mapper.buildDto(pageBy.getBy(), e.getStackTrace(), pageSource());
-        return healLocator(pageBy, ex.getStackTrace()).map(driver::findElements);
+        if (engine.getCurrentShadowRoot()!=null){
+            return healLocator(pageBy, ex.getStackTrace()).map(engine.getCurrentShadowRoot()::findElement);
+        } else {
+            return healLocator(pageBy, ex.getStackTrace()).map(driver::findElement);
+        }
     }
 
     /**
@@ -56,11 +54,11 @@ public class HealingServiceImpl implements HealingService {
      */
     private Optional<By> healLocator(PageAwareBy pageBy, StackTraceElement[] trace) {
         // collect page content
-        String pageContent = pageSource();
+        String pageContent = pageSource(pageBy);
         // search target point in stacktrace
         Optional<StackTraceElement> traceElement = StackUtils.findOriginCaller(trace);
         // search for possible healing results
-        List<Scored<By>> choices = engine.findNewLocations(pageBy, pageSource(), traceElement);
+        List<Scored<By>> choices = engine.findNewLocations(pageBy, pageSource(pageBy), traceElement);
         Optional<Scored<By>> result = choices.stream().findFirst();
         if (!result.isPresent()) {
             log.warn("New element locators have not been found");
@@ -77,6 +75,8 @@ public class HealingServiceImpl implements HealingService {
     }
 
 
+
+
     /**
      * Create screenshot of healed element
      * @param byScored - healed locator
@@ -84,7 +84,12 @@ public class HealingServiceImpl implements HealingService {
      */
     //TODO: need pass search context here
     private byte[] captureScreen(Scored<By> byScored) {
-        WebElement element = driver.findElement(byScored.getValue());
+        WebElement element;
+        if (engine.getCurrentShadowRoot()!=null) {
+            element = engine.getCurrentShadowRoot().findElement(byScored.getValue());
+        } else {
+            element = driver.findElement(byScored.getValue());
+        }
         JavascriptExecutor jse = (JavascriptExecutor) driver;
         jse.executeScript("arguments[0].style.border='3px solid red'", element);
         WebDriver augmentedDriver = new Augmenter().augment(driver);
@@ -97,6 +102,22 @@ public class HealingServiceImpl implements HealingService {
         } else {
             return driver.getPageSource();
         }
+    }
+
+    private String pageSource(PageAwareBy pageBy) {
+        if (pageBy.getDocumentShadowRoot()!=null){
+            StringBuilder innerHTML = new StringBuilder();
+            //bublegum to emulate regular DOM
+            innerHTML.append("<html>")
+                    .append(
+                            ((JavascriptExecutor) driver).executeScript("return (arguments[0].innerHTML);",pageBy.getDocumentShadowRoot()).toString()
+                    )
+                    .append("</html>");
+            return innerHTML.toString();
+        } else {
+            return pageSource();
+        }
+
     }
 
 }

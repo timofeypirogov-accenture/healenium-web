@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 
-import java.util.Collections;
-
 public class AbsentLocatorTest extends AbstractBackendIT {
 
     private static final String PAGE_NAME = AbsentLocatorTest.class.getSimpleName();
@@ -41,7 +39,6 @@ public class AbsentLocatorTest extends AbstractBackendIT {
         driver.get("https://google.com/");
         PageAwareBy by = PageAwareBy.by(PAGE_NAME, By.tagName("nonexistenttag"));
         Assertions.assertThrows(NoSuchElementException.class, () -> driver.findElement(by));
-        Assertions.assertIterableEquals(Collections.emptyList(), driver.findElements(by));
     }
 
     @AfterEach

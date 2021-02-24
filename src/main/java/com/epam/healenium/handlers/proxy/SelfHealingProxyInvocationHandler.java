@@ -15,16 +15,12 @@ package com.epam.healenium.handlers.proxy;
 import com.epam.healenium.SelfHealingEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver.TargetLocator;
 import org.openqa.selenium.WebElement;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 public class SelfHealingProxyInvocationHandler extends BaseHandler {
@@ -35,15 +31,13 @@ public class SelfHealingProxyInvocationHandler extends BaseHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        WebElement element = null;
         try {
             ClassLoader loader = driver.getClass().getClassLoader();
             switch (method.getName()) {
                 case "findElement":
-                    WebElement element = findElement((By) args[0]);
+                     element = findElement((By) args[0]);
                     return Optional.ofNullable(element).map(it -> wrapElement(it, loader)).orElse(null);
-                case "findElements":
-                    List<WebElement> elements = findElements((By) args[0]);;
-                    return elements.stream().map(it -> wrapElement(it, loader)).collect(Collectors.toList());
                 case "getCurrentEngine":
                     return engine;
                 case "getDelegate":
@@ -51,6 +45,15 @@ public class SelfHealingProxyInvocationHandler extends BaseHandler {
                 case "switchTo":
                     TargetLocator switched = (TargetLocator) method.invoke(driver, args);
                     return wrapTarget(switched, loader);
+                case "executeScript":
+                    if(args[0].toString().equals("return arguments[0].shadowRoot")) {
+                     /*   JavascriptExecutor js = (JavascriptExecutor) driver;
+                         element = (WebElement) js.executeScript(args[0].toString(), (Remote) args[1]);
+                        return Optional.ofNullable(element).map(it -> wrapElement(it, loader)).orElse(null);
+                        */
+                        element = (WebElement) method.invoke(driver, args);
+                        return Optional.ofNullable(element).map(it -> wrapElement(it, loader)).orElse(null);
+                    }
                 default:
                     return method.invoke(driver, args);
             }
